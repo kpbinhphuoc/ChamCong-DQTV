@@ -2,64 +2,163 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <title>Chấm Công DQTV</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chấm Công Dân Quân Tự Vệ</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, select, button { margin: 5px 10px 10px 0; padding: 5px; }
+    #registerMessage, #loginMessage, #checkinMessage { margin-top: 10px; color: red; }
+  </style>
 </head>
 <body>
   <h1>Chấm Công Dân Quân Tự Vệ</h1>
 
-  <section>
-    <h2>Đăng ký tài khoản</h2>
-    <input type="text" id="name" placeholder="Họ và tên" />
-    <input type="text" id="position" placeholder="Chức vụ" />
-    <input type="text" id="department" placeholder="Biên chế" />
-    <input type="email" id="email" placeholder="Email" />
-    <button onclick="register()">Đăng ký</button>
-  </section>
+  <h2>Đăng ký tài khoản</h2>
+  <input id="regName" placeholder="Họ và tên" />
+  <select id="regPosition">
+    <option value="">-- Chọn chức vụ --</option>
+    <option value="Chỉ huy">Chỉ huy</option>
+    <option value="Tiểu đội trưởng">Tiểu đội trưởng</option>
+    <option value="Trung đội trưởng">Trung đội trưởng</option>
+    <option value="Chiến sĩ">Chiến sĩ</option>
+  </select>
+  <select id="regDepartment">
+    <option value="">-- Chọn biên chế --</option>
+    <option value="Dân quân thường trực">Dân quân thường trực</option>
+    <option value="Dân quân tại chỗ">Dân quân tại chỗ</option>
+    <option value="Dân quân cơ động">Dân quân cơ động</option>
+    <option value="Dân quân binh chủng">Dân quân binh chủng</option>
+  </select>
+  <input id="regEmail" placeholder="Email" />
+  <input id="regPassword" type="password" placeholder="Mật khẩu" />
+  <button onclick="register()">Đăng ký</button>
+  <div id="registerMessage"></div>
 
-  <section>
-    <h2>Chấm công</h2>
-    <input type="email" id="checkinEmail" placeholder="Nhập email" />
-    <button onclick="checkIn()">Chấm công</button>
-  </section>
+  <hr/>
 
-  <p id="message"></p>
+  <h2>Đăng nhập và chấm công</h2>
+  <input id="loginEmail" placeholder="Email" />
+  <input id="loginPassword" type="password" placeholder="Mật khẩu" />
+  <button onclick="login()">Đăng nhập</button>
+  <div id="loginMessage"></div>
 
-  <script>
-    const apiUrl = 'https://script.google.com/macros/s/AKfycbyf89RsTEqjZUn395y5PW0YwUS3kR03tzTsmdZU5KrSOnwY1pofokOpchQHNY0aGutt/exec'; // Thay thành URL web app bạn deploy
+  <div id="checkinSection" style="display:none;">
+    <p>Xin chào, <span id="userName"></span></p>
+    <button onclick="checkIn()">Chấm công (vào/ra)</button>
+    <div id="checkinMessage"></div>
+  </div>
 
-    function register() {
-      const data = {
+<script>
+  const apiUrl = 'https://script.google.com/macros/s/AKfycbzX1ji58iL4FxyvWpA9W0q-mU3jDxakxB0miuMGajhyLIWkTVII69s-XA7R0o8Fp7tl/exec';
+
+  // Vị trí cho phép chấm công (ví dụ)
+  const allowedLocation = { lat: 10.7733, lng: 106.6950 }; // Thay kinh độ vĩ độ thực tế
+  const allowedRadius = 100; // mét
+
+  function showMessage(id, msg, isError = true) {
+    const el = document.getElementById(id);
+    el.style.color = isError ? 'red' : 'green';
+    el.textContent = msg;
+  }
+
+  async function register() {
+    const name = document.getElementById('regName').value.trim();
+    const position = document.getElementById('regPosition').value.trim();
+    const department = document.getElementById('regDepartment').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value.trim();
+
+    if (!name || !position || !department || !email || !password) {
+      showMessage('registerMessage', 'Vui lòng nhập đầy đủ thông tin.');
+      return;
+    }
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({
         action: 'register',
-        name: document.getElementById('name').value,
-        position: document.getElementById('position').value,
-        department: document.getElementById('department').value,
-        email: document.getElementById('email').value
-      };
+        name, position, bienChe: department, email, password
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    showMessage('registerMessage', data.message, data.status !== 'success');
+  }
 
-      fetch(apiUrl, {
-        method: 'POST',
-        body: JSON.stringify(data)
-      }).then(response => response.json())
-        .then(res => {
-          document.getElementById('message').innerText = res.message;
-        });
+  async function login() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+
+    if (!email || !password) {
+      showMessage('loginMessage', 'Vui lòng nhập email và mật khẩu.');
+      return;
     }
 
-    function checkIn() {
-      const data = {
-        action: 'checkIn',
-        email: document.getElementById('checkinEmail').value
-      };
-
-      fetch(apiUrl, {
-        method: 'POST',
-        body: JSON.stringify(data)
-      }).then(response => response.json())
-        .then(res => {
-          document.getElementById('message').innerText = res.message;
-        });
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'login', email, password }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      showMessage('loginMessage', 'Đăng nhập thành công', false);
+      document.getElementById('checkinSection').style.display = 'block';
+      document.getElementById('userName').textContent = data.user.name;
+      sessionStorage.setItem('userEmail', email);
+    } else {
+      showMessage('loginMessage', data.message);
+      document.getElementById('checkinSection').style.display = 'none';
     }
-  </script>
+  }
+
+  function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  function checkIn() {
+    if (!navigator.geolocation) {
+      showMessage('checkinMessage', 'Trình duyệt không hỗ trợ định vị GPS.');
+      return;
+    }
+    showMessage('checkinMessage', 'Đang lấy vị trí GPS...', false);
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const distance = getDistanceFromLatLonInM(lat, lng, allowedLocation.lat, allowedLocation.lng);
+
+      if (distance > allowedRadius) {
+        showMessage('checkinMessage', `Bạn đang ở ngoài vùng cho phép (${Math.round(distance)}m). Không thể chấm công.`);
+        return;
+      }
+
+      const email = sessionStorage.getItem('userEmail');
+      if (!email) {
+        showMessage('checkinMessage', 'Bạn chưa đăng nhập.');
+        return;
+      }
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'checkIn', email }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        showMessage('checkinMessage', data.message, false);
+      } else {
+        showMessage('checkinMessage', data.message);
+      }
+    }, (error) => {
+      showMessage('checkinMessage', 'Lỗi lấy vị trí GPS: ' + error.message);
+    }, { enableHighAccuracy: true, timeout: 10000 });
+  }
+</script>
 </body>
 </html>
