@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chấm Công DQTV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <h1>Chấm Công Dân Quân Tự Vệ</h1>
+
+  <section>
+    <h2>Đăng ký tài khoản</h2>
+    <input type="text" id="name" placeholder="Họ và tên" />
+    <input type="text" id="position" placeholder="Chức vụ" />
+    <input type="text" id="department" placeholder="Biên chế" />
+    <input type="email" id="email" placeholder="Email" />
+    <button onclick="register()">Đăng ký</button>
+  </section>
+
+  <section>
+    <h2>Chấm công</h2>
+    <input type="email" id="checkinEmail" placeholder="Nhập email" />
+    <button onclick="checkIn()">Chấm công</button>
+  </section>
+
+  <p id="message"></p>
+
+  <script>
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbxGKbGge5Z5aPayIot7Ou4Kw418mJk-dYyRLx6Pb-ndySE1KpLibRYn5krYb0s4e6oK/exec'; // Thay thành URL web app bạn deploy
+
+    function register() {
+      const data = {
+        action: 'register',
+        name: document.getElementById('name').value,
+        position: document.getElementById('position').value,
+        department: document.getElementById('department').value,
+        email: document.getElementById('email').value
+      };
+
+      fetch(apiUrl, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }).then(response => response.json())
+        .then(res => {
+          document.getElementById('message').innerText = res.message;
+        });
+    }
+
+    function checkIn() {
+      const data = {
+        action: 'checkIn',
+        email: document.getElementById('checkinEmail').value
+      };
+
+      fetch(apiUrl, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }).then(response => response.json())
+        .then(res => {
+          document.getElementById('message').innerText = res.message;
+        });
+    }
+  </script>
+</body>
+</html>
